@@ -3,10 +3,7 @@
 ![enter image description here](https://lh3.googleusercontent.com/pw/AJFCJaXewwJEp0hSooj47PsD2wedGBqjfTNPr4hnIMfypkTmF6dvVk35OL6wYIDNf-FADkZjOSxs9NYK7uwVPi3zdQcJIQg-jDZJuLTReIErvdG3j4jWkVGCEp0VGvkFNXfRFGQNTQacYUqAfBUWxaj7I9ZB=w2976-h1472-s-no)
 ## Overview
 This repository contains the code accompanying our [paper](https://arxiv.org/abs/2306.13575)  *Scaling MLPs: A Tale of Inductive Bias*. In this work we explore the limits of the *multi-layer perceptron*, or short MLP, when subjected to higher amounts of compute. More precisely, we study architectures with the following block form:
-$$
-\operatorname{Block}(\bm{z}) = \bm{z} + \bm{W}^{c}\sigma\left(\bm{W}^{e}\operatorname{LN}\left(\bm{z}\right)\right)
-$$
-where $\sigma$ is an activation function and $\operatorname{LN}$ denotes LayerNormalization. 
+![](https://lh3.googleusercontent.com/pw/AIL4fc_3gvNmHfrvhN38zgU2OMTHqG-4w0zMY6of3S7Gi0EoV498btfYB2H7NnYUlpm8d0Va7COQAigFYZ9BCEI93qIqkV4_CKLKtdED6VQ8p-uJrKb6zD0yRfoe2yaMRdFFZeyPXaiFGWkJEurH-wvNGMY1=w1426-h154-s-no?authuser=0)
 ​
 **Why?** We argue that such an MLP has minimal inductive bias (compared to convolutional networks, vision transformers, MLPMixers etc.) and thus offers an interesting test bed to explore whether simply scaling compute can make even the simplest models work (to some degree). The importance of inductive bias has recently been questioned due to vision transformers and MLPMixers eclipsing the more structured convolutional models on standard benchmarks.
 ​
@@ -23,8 +20,6 @@ Fine-tuning those models for $50$ epochs should give you roughly the following d
 | **B_12-Wi_512**  | 37M     | 90.8%   | 73.7%    | 82.9% | 58.5%        | 37.1%      |
 | **B_6-Wi_1024**  | 74M     | 91.5%   | 76.4%    | 85.0% | 62.7%        | 40.0%      |
 | **B_12-Wi_1024** | 124M    | 93.6%   | 79.2%    | 88.9% | 69.9%        | 42.5%      |
-​
-​
 ​
 
 Make sure that you also download the config.txt file and place in together in the same folder as the corresponding checkpoint.
