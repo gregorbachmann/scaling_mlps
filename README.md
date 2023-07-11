@@ -11,16 +11,15 @@ Moreover, MLPs still remain to be the main protagonists in ML theory works but s
 ​
 ## Pretrained Models
 ​
-We publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here]([https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing)). 
-​
-Fine-tuning those models for $50$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
+We publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing). Fine-tuning those models for $50$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
+
 |                  | #Params | CIFAR10 | CIFAR100 | STL10 | TinyImageNet | ImageNet1k |
 | ---------------- | ------- | ------- | -------- | ----- | ------------ | ---------- |
 | **B_6-Wi_512**   | 24M     | 87.6%   | 69.8%    | 79.1% | 52.3%        | 33.1%      |
 | **B_12-Wi_512**  | 37M     | 90.8%   | 73.7%    | 82.9% | 58.5%        | 37.1%      |
 | **B_6-Wi_1024**  | 74M     | 91.5%   | 76.4%    | 85.0% | 62.7%        | 40.0%      |
 | **B_12-Wi_1024** | 124M    | 93.6%   | 79.2%    | 88.9% | 69.9%        | 42.5%      |
-​
+
 
 Make sure that you also download the config.txt file and place in together in the same folder as the corresponding checkpoint.
 ## Environment Setup
