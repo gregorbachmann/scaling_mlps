@@ -41,3 +41,15 @@ def topk_acc(preds, targs, targs_perm=None, k=5, avg=False):
         return torch.maximum(acc, acc_perm), torch.maximum(top_5, top_5_perm)
 
     return acc.item(), top_5.item()
+
+
+def real_acc(preds, targs, k, avg=False):
+    if avg:
+        num = preds.shape[0]
+    else:
+        num = 1
+    _, top_k_inds = topk(preds, k)
+    top_1_inds = top_k_inds[:, 0]
+    acc_real = 1 / num * sum(any(top_1_inds.unsqueeze(dim=1).eq(targs), dim=1), dim=0)
+
+    return acc_real

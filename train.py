@@ -13,7 +13,7 @@ from data_utils.data_stats import *
 from data_utils.dataloader import get_loader
 from utils.config import config_to_name
 from utils.get_compute import get_compute
-from utils.metrics import topk_acc, AverageMeter
+from utils.metrics import topk_acc, real_acc, AverageMeter
 from utils.optimizer import get_optimizer, get_scheduler, OPTIMIZERS_DICT, SCHEDULERS
 
 
@@ -24,12 +24,7 @@ def train(model, opt, scheduler, loss_fn, epoch, train_loader, args):
     total_acc, total_top5 = AverageMeter(), AverageMeter()
     total_loss = AverageMeter()
 
-    for ims, targs in tqdm(train_loader, desc="Training epoch: " + str(epoch)):
-        opt.zero_grad()
-
-        if args.channel_avg:
-            ims = ims.mean(dim=1)
-
+    for step, (ims, targs) in enumerate(tqdm(train_loader, desc="Training epoch: " + str(epoch))):
         ims = torch.reshape(ims, (ims.shape[0], -1))
         preds = model(ims)
 
@@ -53,9 +48,11 @@ def train(model, opt, scheduler, loss_fn, epoch, train_loader, args):
         total_top5.update(top5, ims.shape[0])
 
         loss.backward()
-        if args.clip > 0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
-        opt.step()
+        if step % args.accum_steps == 0:
+            if args.clip > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
+            opt.step()
+            opt.zero_grad()
 
         total_loss.update(loss.item(), ims.shape[0])
 
@@ -78,15 +75,20 @@ def test(model, loader, loss_fn, args):
     total_acc, total_top5, total_loss = AverageMeter(), AverageMeter(), AverageMeter()
 
     for ims, targs in tqdm(loader, desc="Evaluation"):
-        if args.channel_avg:
-            ims = ims.mean(dim=1)
         ims = torch.reshape(ims, (ims.shape[0], -1))
         preds = model(ims)
 
-        total_loss.update(loss_fn(preds, targs).item(), ims.shape[0])
-        acc, top5 = topk_acc(preds, targs, k=5, avg=True)
+        if args.dataset != 'imagenet_real':
+            acc, top5 = topk_acc(preds, targs, k=5, avg=True)
+            loss = loss_fn(preds, targs).item()
+        else:
+            acc = real_acc(preds, targs, k=5, avg=True)
+            top5 = 0
+            loss = 0
+
         total_acc.update(acc, ims.shape[0])
         total_top5.update(top5, ims.shape[0])
+        total_loss.update(loss)
 
     end = time.time()
 
@@ -119,9 +121,11 @@ def main(args):
             json.dump(args.__dict__, f, indent=2)
 
     # Get the dataloaders
+    local_batch_size = args.batch_size // args.accum_steps
+
     train_loader = get_loader(
         args.dataset,
-        bs=args.batch_size,
+        bs=local_batch_size,
         mode="train",
         augment=args.augment,
         dev=device,
@@ -129,24 +133,26 @@ def main(args):
         mixup=args.mixup,
         data_path=args.data_path,
         data_resolution=args.resolution,
+        crop_resolution=args.crop_resolution
     )
 
     test_loader = get_loader(
         args.dataset,
-        bs=args.batch_size,
+        bs=local_batch_size,
         mode="test",
         augment=False,
         dev=device,
         data_path=args.data_path,
         data_resolution=args.resolution,
+        crop_resolution=args.crop_resolution
     )
 
     start_ep = 1
     if args.reload:
         try:
-            params = torch.load(path + "/optimal_params")
+            params = torch.load(path + "/name_of_checkpoint")
             model.load_state_dict(params)
-            start_ep = 1
+            start_ep = 350
         except:
             print("No pretrained model found, training from scratch")
 
@@ -165,8 +171,7 @@ def main(args):
         )
         wandb.run.name = name
 
-    optimal_acc = -1
-    compute_per_epoch = get_compute(model, args.n_train, args.resolution)
+    compute_per_epoch = get_compute(model, args.n_train, args.crop_resolution)
 
     for ep in range(start_ep, args.epochs):
         calc_stats = (ep + 1) % args.calculate_stats == 0
@@ -180,7 +185,7 @@ def main(args):
         if args.wandb:
             wandb.log({"Training time": train_time, "Training loss": train_loss})
 
-        if ep % args.save_freq and args.save:
+        if ep % args.save_freq == 0 and args.save:
             torch.save(
                 model.state_dict(),
                 path + "/epoch_" + str(ep) + "_compute_" + str(current_compute),
@@ -202,14 +207,6 @@ def main(args):
                     }
                 )
 
-            if test_acc > optimal_acc:
-                optimal_acc = test_acc
-                if args.save:
-                    torch.save(
-                        model.state_dict(),
-                        path + "/optimal_params",
-                    )
-
             # Print all the stats
             print("Epoch", ep, "       Time:", train_time)
             print("-------------- Training ----------------")
@@ -226,18 +223,13 @@ def main(args):
 def get_parser():
     parser = argparse.ArgumentParser(description="Scaling MLPs")
 
-    ## Data
+    # Data
     parser.add_argument(
         "--data_path", default="./beton", type=str, help="Path to data directory"
     )
     parser.add_argument("--dataset", default="imagenet21", type=str, help="Dataset")
     parser.add_argument("--resolution", default=64, type=int, help="Image Resolution")
-    parser.add_argument(
-        "--channel_avg",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Whether to average over channels",
-    )
+    parser.add_argument("--crop_resolution", default=None, type=int, help="Crop Resolution")
     parser.add_argument(
         "--n_train", default=None, type=int, help="Number of samples. None for all"
     )
@@ -249,15 +241,17 @@ def get_parser():
     )
     parser.add_argument("--mixup", default=0.8, type=float, help="Strength of mixup")
 
-    ## Model
+    # Model
     parser.add_argument(
         "--model", default="BottleneckMLP", type=str, help="Type of model"
     )
     parser.add_argument(
         "--architecture", default="B_6-Wi_1024", type=str, help="Architecture type"
     )
-
-    ## Training
+    parser.add_argument(
+        "--normalization", default="layer", type=str, help="Normalization type"
+    )
+    # Training
     parser.add_argument(
         "--optimizer",
         default="lion",
@@ -266,6 +260,7 @@ def get_parser():
         choices=OPTIMIZERS_DICT.keys(),
     )
     parser.add_argument("--batch_size", default=4096, type=int, help="Batch size")
+    parser.add_argument("--accum_steps", default=1, type=int, help="Number of accumulation steps")
     parser.add_argument("--lr", default=0.00005, type=float, help="Learning rate")
     parser.add_argument(
         "--scheduler", type=str, default="none", choices=SCHEDULERS, help="Scheduler"
@@ -282,8 +277,7 @@ def get_parser():
         default=False,
         help="Reinitialize from checkpoint",
     )
-
-    ## Logging
+    # Logging
     parser.add_argument(
         "--calculate_stats",
         type=int,
@@ -296,7 +290,7 @@ def get_parser():
         default="./checkpoints",
         help="Path to checkpoint directory",
     )
-    parser.add_argument("--save_freq", type=int, default=100, help="Save frequency")
+    parser.add_argument("--save_freq", type=int, default=50, help="Save frequency")
     parser.add_argument(
         "--save",
         action=argparse.BooleanOptionalAction,
@@ -328,8 +322,8 @@ if __name__ == "__main__":
     if args.n_train is None:
         args.n_train = SAMPLE_DICT[args.dataset]
 
-    args.num_channels = 1 if args.channel_avg else 3
-
+    if args.crop_resolution is None:
+        args.crop_resolution = args.resolution
     if args.wandb_entity is None:
         print("No wandb entity provided, Continuing without wandb")
         args.wandb = False

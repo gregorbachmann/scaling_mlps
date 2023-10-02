@@ -1,6 +1,6 @@
 ﻿# Scaling MLPs :fire:
 ​
-![enter image description here](https://lh3.googleusercontent.com/pw/AJFCJaXewwJEp0hSooj47PsD2wedGBqjfTNPr4hnIMfypkTmF6dvVk35OL6wYIDNf-FADkZjOSxs9NYK7uwVPi3zdQcJIQg-jDZJuLTReIErvdG3j4jWkVGCEp0VGvkFNXfRFGQNTQacYUqAfBUWxaj7I9ZB=w2976-h1472-s-no)
+![enter image description here](https://lh3.googleusercontent.com/pw/ADCreHeOAjsGpGF-_wkpd4gDRues8huAeEyLIUqmCBCSGbyRqn8rlkocN4iWFRVT0VAP_7CzZHHqiiidaU4wnZwAu0dR_XU_-ZW7wnmrtN_t69dOcZysd-r43ih29LxwosoJQb5_65OgnR9XC_1fQqjjV_Pv08GPpspJpKfJ0ENEO-CJNRNUkNsc4w0w0QOKV_Emw2rDz0NXuER6BPw2Qn7UacEiAdl5ZM7D-MQPlxVAPYUVG8Bz-gFQJ1JHLcEUn2qSeR3LmdcYeoR5oDv-HPSZOvuhOCuMYwlI38C9Zvbnl_Qmu0JlFJaW0Jf7JaWHqoKQ-vU1t_7QwrBYo9r-y83sgZLd0p-ruZeKzARCW76L1f98Ujrjfxt8hCnEJzBjO_yHgnwEuaWkNFQ1UwyMUENUIki6c9aVdq24XG0vKOCv5h1cTBNE577seXr7aLv-bG9p9GPn9g-L6mP_D_4bWrLX5J_sAsunVrP7JtuaRSf8YHerjhlshK7OG02ZkNe3AleKD2T57ix4YXrSSE3hkl14AGAXQTnJCIMh16bIc05aVPThGrNW77D37i8BliZap98gvCwA-ZAU5n3NEkTt8Gh-RZh6sMxU_bmldVJjkQhFduF9tPuwC-WVH7ibxC0MIrN9UVh4VyJeo2qRyB8G5P76YcUCQih_G_NRe1Xz8LftY--Or3k3Rj9NzM5hQvMoPdbvtS0Li5jktmxoKsuJriBlIiTTqtekka8wY52wvRrtyxSLfMNRns_xwnacpi-nQeTMmO9nJjQjRGhcJbYFjIiSQh_f6tCl_2vYUesTrJ1pi1ExzVS0k2mLJe6ZtRZEGqRWDwxMBFnllEs_r0wDA6pA_T0TEGag1iXYsMXsocYzBxOlrMM--4oLExEQltlzFWM_lreeUB9SALJWl3dRei1lmg=w3024-h1520-s-no?authuser=0)
 ## Overview
 This repository contains the code accompanying our [paper](https://arxiv.org/abs/2306.13575)  *Scaling MLPs: A Tale of Inductive Bias*. In this work we explore the limits of the *multi-layer perceptron*, or short MLP, when subjected to higher amounts of compute. More precisely, we study architectures with the following block form:
 ![](https://lh3.googleusercontent.com/pw/AIL4fc_3gvNmHfrvhN38zgU2OMTHqG-4w0zMY6of3S7Gi0EoV498btfYB2H7NnYUlpm8d0Va7COQAigFYZ9BCEI93qIqkV4_CKLKtdED6VQ8p-uJrKb6zD0yRfoe2yaMRdFFZeyPXaiFGWkJEurH-wvNGMY1=w1426-h154-s-no?authuser=0)
@@ -13,12 +13,13 @@ Moreover, MLPs still remain to be the main protagonists in ML theory works but s
 ​
 We publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing). Fine-tuning those models for $50$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
 
-|                  | #Params | CIFAR10 | CIFAR100 | STL10 | TinyImageNet | ImageNet1k |
-| ---------------- | ------- | ------- | -------- | ----- | ------------ | ---------- |
-| **B_6-Wi_512**   | 24M     | 87.6%   | 69.8%    | 79.1% | 52.3%        | 33.1%      |
-| **B_12-Wi_512**  | 37M     | 90.8%   | 73.7%    | 82.9% | 58.5%        | 37.1%      |
-| **B_6-Wi_1024**  | 74M     | 91.5%   | 76.4%    | 85.0% | 62.7%        | 40.0%      |
-| **B_12-Wi_1024** | 124M    | 93.6%   | 79.2%    | 88.9% | 69.9%        | 42.5%      |
+|                  | #Params | CIFAR10 | CIFAR100 | STL10 | TinyImageNet | ImageNet1k | ImageNetReal
+| ---------------- | ------- | ------- | -------- | ----- | ------------ | ---------- | ------------
+| **B_6-Wi_512**   | 24M     | 88.5%   | 71.2%    | 79.9% |    53.2%     |    33.3%   |    38.2
+| **B_12-Wi_512**  | 37M     | 91.4%   | 75.1%    | 84.4% |    60.0%     |    38.0%   |    42.8
+| **B_6-Wi_1024**  | 74M     | 92.5%   | 77.1%    | 86.5% |    64.3%     |    40.0%   |    47.0%
+| **B_12-Wi_1024** | 124M    | 94.2%   | 80.0%    | 89.9% |    69.9%     |    43.2%   |    48.6%
+| **B_12-Wi_1024 + TTA** | 124M    | 95.5%   | 82.6%    | 92.2% |    73.1%      |     51.4%   | 57.9%
 
 
 Make sure that you also download the config.txt file and place in together in the same folder as the corresponding checkpoint.

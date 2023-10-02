@@ -4,8 +4,8 @@ import json
 
 def config_to_name(args):
     return os.path.join(
-        str(args.dataset),
-        f"{args.model}_{args.architecture}",
+        str(args.dataset) + '_res_' + str(args.crop_resolution),
+        f"{args.model}_{args.architecture}_norm_{args.normalization}",
         f"batchsize_{args.batch_size}",
         f"{args.optimizer}_lr_{args.lr}_smooth_{args.smooth}"
         + f"_decay_{args.weight_decay}_augment_{args.augment}_mixup_{args.mixup}",
@@ -20,6 +20,7 @@ def model_from_config(path):
         config = json.load(f)
     model = config["model"]
     architecture = config["architecture"]
-    resolution = int(config["resolution"])
+    norm = config["normalization"]
+    crop_resolution = int(config["crop_resolution"])
 
-    return model, architecture, resolution
+    return model, architecture, crop_resolution, norm

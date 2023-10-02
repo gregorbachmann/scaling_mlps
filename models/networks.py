@@ -1,6 +1,12 @@
 from torch import nn
 
 
+NORMS = {
+    'layer': nn.LayerNorm,
+    'batch': nn.BatchNorm1d
+}
+
+
 class StandardMLP(nn.Module):
     def __init__(self, dim_in, dim_out, widths):
         super(StandardMLP, self).__init__()
@@ -22,6 +28,7 @@ class StandardMLP(nn.Module):
         z = self.linear_in(x)
         for layer, norm in zip(self.layers, self.layer_norms):
             z = norm(z)
+            z = nn.GELU()(z)
             z = layer(z)
 
         out = self.linear_out(z)
@@ -30,11 +37,12 @@ class StandardMLP(nn.Module):
 
 
 class BottleneckMLP(nn.Module):
-    def __init__(self, dim_in, dim_out, block_dims):
+    def __init__(self, dim_in, dim_out, block_dims, norm='layer'):
         super(BottleneckMLP, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.block_dims = block_dims
+        self.norm = NORMS[norm]
 
         self.linear_in = nn.Linear(self.dim_in, self.block_dims[0][1])
         self.linear_out = nn.Linear(self.block_dims[-1][1], self.dim_out)
@@ -44,7 +52,7 @@ class BottleneckMLP(nn.Module):
         for block_dim in self.block_dims:
             wide, thin = block_dim
             blocks.append(BottleneckBlock(thin=thin, wide=wide))
-            layernorms.append(nn.LayerNorm(thin))
+            layernorms.append(self.norm(thin))
 
         self.blocks = nn.ModuleList(blocks)
         self.layernorms = nn.ModuleList(layernorms)

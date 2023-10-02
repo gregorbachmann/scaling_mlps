@@ -5,8 +5,10 @@ def get_architecture(
     architecture="B_6-Wi_1024",
     model="BottleneckMLP",
     num_channels=3,
-    resolution=None,
+    crop_resolution=None,
     num_classes=None,
+    normalization='layer',
+    descriptor=False,
     **kwargs,
 ):
     assert model in ["BottleneckMLP", "MLP"], f"Model {model} not supported."
@@ -22,17 +24,19 @@ def get_architecture(
 
     if model == "BottleneckMLP":
         blocks = [[expansion_factor * thin, thin] for _ in range(num_blocks)]
-
+        dim_in = crop_resolution**2 * num_channels
         return BottleneckMLP(
-            dim_in=resolution**2 * num_channels,
+            dim_in=dim_in,
             dim_out=num_classes,
             block_dims=blocks,
+            norm=normalization
         )
+
     elif model == "MLP":
         blocks = [thin for _ in range(num_blocks)]
 
         return StandardMLP(
-            dim_in=resolution.res**2 * num_channels,
+            dim_in=crop_resolution**2 * num_channels,
             dim_out=num_classes,
             widths=blocks,
         )
