@@ -206,7 +206,7 @@ if __name__ == "__main__":
         default=True,
         help="Whether to augment data",
     )
-    parser.add_argument("--mixup", default=0.8, type=float, help="Strength of mixup")
+    parser.add_argument("--mixup", default=0., type=float, help="Strength of mixup")
     parser.add_argument('--crop_scale', nargs='+', type=float, default=[0.08, 1.], help="Scale for crop at test time")
     parser.add_argument('--crop_ratio', nargs='+', type=float, default=[0.08, 1.], help="Ratio for crop at test time")
 

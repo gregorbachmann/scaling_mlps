@@ -11,9 +11,9 @@ Moreover, MLPs still remain to be the main protagonists in ML theory works but s
 ​
 ## Pretrained Models
 ​
-We publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing). Fine-tuning those models for $50$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
+We publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing). Fine-tuning the $800$ epochs models for $100$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
 
-|                  | #Params | CIFAR10 | CIFAR100 | STL10 | TinyImageNet | ImageNet1k | ImageNetReal
+|                  | #Params | CIFAR10 | CIFAR100 | STL10 | TinyImageNet | ImageNet | ImageNetReal
 | ---------------- | ------- | ------- | -------- | ----- | ------------ | ---------- | ------------
 | **B_6-Wi_512**   | 24M     | 88.5%   | 71.2%    | 79.9% |    53.2%     |    33.3%   |    38.2
 | **B_12-Wi_512**  | 37M     | 91.4%   | 75.1%    | 84.4% |    60.0%     |    38.0%   |    42.8
@@ -45,11 +45,13 @@ Downloading and converting the trainset of CIFAR10 to the *.beton* format can fo
 
 Converting a subfolder-structured dataset can be converted to the *.beton* format at resolution 64 by running
 >`python3 data_utils/dataset_to_beton.py --data_path path/to/folders --mode train --res 64`
+
 ## Pre-training
 ​
 **ImageNet21k.** Due to legal reasons, we cannot provide the *ImageNet21k* in the .beton format directly. We recommend applying [here](https://www.image-net.org/download.php) to download it but in case you cannot get access, you can use the torrent [here](https://academictorrents.com/details/8ec0d8df0fbb507594557bce993920442f4f6477). Similarly for *ImageNet1k*. Once you have downloaded the dataset, we recommend pre-processing it as detailed in this [repository](https://arxiv.org/abs/2104.10972) to remove faulty images and classes with only very little examples. Then produce the *.beton* as outlined above. 
 ​
 ​
+
 **Pre-training.** For pre-training the `B_12-Wi_1024` *BottleneckMLP* on *ImageNet21k* at resolution $64 \times 64$, you can use the following command:
 >`python3 train.py --dataset imagenet21 --model BottleneckMLP --architecture B_12-Wi_1024 --batch_size 16384 --resolution 64` 
 ​
@@ -58,7 +60,7 @@ For more specific configurations, we encourage the user to check out all availab
 ## Fine-tuning
 ​
 You can fine-tune our pre-trained checkpoints or your own using the script `finetune.py`.  For instance, the following command fine-tunes the model specified in the path argument on CIFAR10, provided you have converted the CIFAR10 dataset to the *.beton* format:
-> `python3 finetune.py --checkpoint_path path/to/checkpoint --dataset cifar10 --batch_size 2048 --epochs 50 --data_resolution 32 --lr 0.01 --optimizer sgd --smooth 0.3 --no-augment --mixup 0.0 --mode finetune --weight_decay 0.0001`
+> `python3 finetune.py --checkpoint_path path/to/checkpoint --dataset cifar10 --data_resolution 32 --batch_size 2048 --epochs 100 --lr 0.01 --weight_decay 0.0001 --data_path /local/home/stuff/ --crop_scale 0.4 1. --crop_ratio 1. 1. --optimizer sgd --augment --mode finetune --smooth 0.3`
 ​
 
 You can also train a linear layer on top by specifying the flag `--mode linear`instead.
