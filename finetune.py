@@ -33,7 +33,9 @@ def test_time_aug(model, loader, num_augs, args):
             ims = torch.reshape(ims, (ims.shape[0], -1))
             preds = model(ims)
 
-            all_preds[cnt:cnt + ims.shape[0]] += torch.nn.functional.softmax(preds.detach().cpu(), dim=-1)
+            all_preds[cnt : cnt + ims.shape[0]] += torch.nn.functional.softmax(
+                preds.detach().cpu(), dim=-1
+            )
             targets.append(targs.detach().cpu())
 
             cnt += ims.shape[0]
@@ -41,11 +43,11 @@ def test_time_aug(model, loader, num_augs, args):
     all_preds = all_preds / num_augs
     targets = torch.cat(targets)
 
-    if args.dataset != 'imagenet_real':
+    if args.dataset != "imagenet_real":
         acc, top5 = topk_acc(all_preds, targets, k=5, avg=True)
     else:
         acc = real_acc(all_preds, targets, k=5, avg=True)
-        top5 = 0.
+        top5 = 0.0
 
     return acc, top5
 
@@ -53,7 +55,7 @@ def test_time_aug(model, loader, num_augs, args):
 def finetune(args):
     # Use mixed precision matrix multiplication
     torch.backends.cuda.matmul.allow_tf32 = True
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Get the resolution the model was trained with
     model, architecture, crop_resolution, norm = model_from_config(args.checkpoint_path)
@@ -67,7 +69,7 @@ def finetune(args):
     train_loader = get_loader(
         args.dataset,
         bs=args.batch_size,
-        mode='train',
+        mode="train",
         augment=args.augment,
         dev=device,
         num_samples=args.n_train,
@@ -76,34 +78,33 @@ def finetune(args):
         data_resolution=args.data_resolution,
         crop_resolution=args.crop_resolution,
         crop_ratio=tuple(args.crop_ratio),
-        crop_scale=tuple(args.crop_scale)
+        crop_scale=tuple(args.crop_scale),
     )
 
     test_loader = get_loader(
         args.dataset,
         bs=args.batch_size,
-        mode='test',
+        mode="test",
         augment=False,
         dev=device,
         data_path=args.data_path,
         data_resolution=args.data_resolution,
         crop_resolution=args.crop_resolution,
         crop_ratio=tuple(args.crop_ratio),
-        crop_scale=tuple(args.crop_scale)
+        crop_scale=tuple(args.crop_scale),
     )
 
     test_loader_aug = get_loader(
         args.dataset,
         bs=args.batch_size,
-        mode='test',
+        mode="test",
         augment=True,
         dev=device,
         data_path=args.data_path,
         data_resolution=args.data_resolution,
         crop_resolution=args.crop_resolution,
         crop_ratio=tuple(args.crop_ratio),
-        crop_scale=tuple(args.crop_scale)
-
+        crop_scale=tuple(args.crop_scale),
     )
 
     # Create unique identifier
@@ -113,41 +114,41 @@ def finetune(args):
     # Create folder to store the checkpoints
     if not os.path.exists(path):
         os.makedirs(path)
-        with open(path + '/config.txt', 'w') as f:
+        with open(path + "/config.txt", "w") as f:
             json.dump(args.__dict__, f, indent=2)
 
-    print('Loading checkpoint', args.checkpoint_path)
+    print("Loading checkpoint", args.checkpoint_path)
     params = {
         k: v
         for k, v in torch.load(args.checkpoint_path).items()
-        if 'linear_out' not in k
+        if "linear_out" not in k
     }
 
-    print('Load_state output', model.load_state_dict(params, strict=False))
+    print("Load_state output", model.load_state_dict(params, strict=False))
 
     model.linear_out = Linear(model.linear_out.in_features, args.num_classes)
     model.cuda()
 
     param_groups = [
         {
-            'params': [v for k, v in model.named_parameters() if 'linear_out' in k],
-            'lr': args.lr,
+            "params": [v for k, v in model.named_parameters() if "linear_out" in k],
+            "lr": args.lr,
         },
     ]
 
     if args.mode != "linear":
         param_groups.append(
             {
-                'params': [
-                    v for k, v in model.named_parameters() if 'linear_out' not in k
+                "params": [
+                    v for k, v in model.named_parameters() if "linear_out" not in k
                 ],
-                'lr': args.lr * args.body_learning_rate_multiplier,
+                "lr": args.lr * args.body_learning_rate_multiplier,
             },
         )
     else:
         # freeze the body
         for name, param in model.named_parameters():
-            if 'linear_out' not in name:
+            if "linear_out" not in name:
                 param.requires_grad = False
 
     opt = get_optimizer(args.optimizer)(param_groups, lr=args.lr)
@@ -167,26 +168,26 @@ def finetune(args):
             )
 
             # Print all the stats
-            print('Epoch', ep, '       Time:', train_time)
-            print('-------------- Training ----------------')
-            print('Average Training Loss:       ', '{:.6f}'.format(train_loss))
-            print('Average Training Accuracy:   ', '{:.4f}'.format(train_acc))
-            print('Top 5 Training Accuracy:     ', '{:.4f}'.format(train_top5))
-            print('---------------- Test ------------------')
-            print('Test Accuracy        ', '{:.4f}'.format(test_acc))
-            print('Top 5 Test Accuracy          ', '{:.4f}'.format(test_top5))
+            print("Epoch", ep, "       Time:", train_time)
+            print("-------------- Training ----------------")
+            print("Average Training Loss:       ", "{:.6f}".format(train_loss))
+            print("Average Training Accuracy:   ", "{:.4f}".format(train_acc))
+            print("Top 5 Training Accuracy:     ", "{:.4f}".format(train_top5))
+            print("---------------- Test ------------------")
+            print("Test Accuracy        ", "{:.4f}".format(test_acc))
+            print("Top 5 Test Accuracy          ", "{:.4f}".format(test_top5))
             print()
 
             if test_acc > optimal_acc:
                 optimal_acc = test_acc
-                #torch.save(model.state_dict(), path + '/optimal_params')
+                torch.save(model.state_dict(), path + "/optimal_params")
 
-    print('-------- Test Time Augmentation Evaluation -------')
-    
+    print("-------- Test Time Augmentation Evaluation -------")
+
     num_augs = 100
     acc, top5 = test_time_aug(model, test_loader_aug, num_augs, args)
-    print(num_augs, 'augmentations: Test accuracy:', acc)
-    print(num_augs, 'augmentations: Test Top5 accuracy:', top5)
+    print(num_augs, "augmentations: Test accuracy:", acc)
+    print(num_augs, "augmentations: Test Top5 accudracy:", top5)
 
 
 if __name__ == "__main__":
@@ -196,7 +197,9 @@ if __name__ == "__main__":
         "--data_path", default="./beton", type=str, help="Path to data directory"
     )
     parser.add_argument("--dataset", default="cifar100", type=str, help="Dataset")
-    parser.add_argument("--data_resolution", default=64, type=int, help="Image Resolution")
+    parser.add_argument(
+        "--data_resolution", default=64, type=int, help="Image Resolution"
+    )
     parser.add_argument(
         "--n_train", default=None, type=int, help="Number of samples. None for all"
     )
@@ -206,9 +209,21 @@ if __name__ == "__main__":
         default=True,
         help="Whether to augment data",
     )
-    parser.add_argument("--mixup", default=0., type=float, help="Strength of mixup")
-    parser.add_argument('--crop_scale', nargs='+', type=float, default=[0.08, 1.], help="Scale for crop at test time")
-    parser.add_argument('--crop_ratio', nargs='+', type=float, default=[0.08, 1.], help="Ratio for crop at test time")
+    parser.add_argument("--mixup", default=0.0, type=float, help="Strength of mixup")
+    parser.add_argument(
+        "--crop_scale",
+        nargs="+",
+        type=float,
+        default=[0.08, 1.0],
+        help="Scale for crop at test time",
+    )
+    parser.add_argument(
+        "--crop_ratio",
+        nargs="+",
+        type=float,
+        default=[0.08, 1.0],
+        help="Ratio for crop at test time",
+    )
 
     # Training
     parser.add_argument(
@@ -219,7 +234,9 @@ if __name__ == "__main__":
         choices=OPTIMIZERS_DICT.keys(),
     )
     parser.add_argument("--batch_size", default=4096, type=int, help="Batch size")
-    parser.add_argument("--accum_steps", default=1, type=int, help="Number of accumulation steps")
+    parser.add_argument(
+        "--accum_steps", default=1, type=int, help="Number of accumulation steps"
+    )
     parser.add_argument("--lr", default=0.01, type=float, help="Learning rate")
     parser.add_argument(
         "--scheduler", type=str, default="none", choices=SCHEDULERS, help="Scheduler"

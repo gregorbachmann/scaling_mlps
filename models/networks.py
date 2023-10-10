@@ -1,10 +1,7 @@
 from torch import nn
 
 
-NORMS = {
-    'layer': nn.LayerNorm,
-    'batch': nn.BatchNorm1d
-}
+NORMS = {"layer": nn.LayerNorm, "batch": nn.BatchNorm1d}
 
 
 class StandardMLP(nn.Module):
@@ -24,20 +21,23 @@ class StandardMLP(nn.Module):
         self.layers = nn.ModuleList(self.layers)
         self.layernorms = nn.ModuleList(self.layer_norms)
 
-    def forward(self, x):
-        z = self.linear_in(x)
+    def forward(self, x, pre_logits=False):
+        x = self.linear_in(x)
         for layer, norm in zip(self.layers, self.layer_norms):
-            z = norm(z)
-            z = nn.GELU()(z)
-            z = layer(z)
+            x = norm(x)
+            x = nn.GELU()(x)
+            x = layer(x)
 
-        out = self.linear_out(z)
+        if pre_logits:
+            return x
+
+        out = self.linear_out(x)
 
         return out
 
 
 class BottleneckMLP(nn.Module):
-    def __init__(self, dim_in, dim_out, block_dims, norm='layer'):
+    def __init__(self, dim_in, dim_out, block_dims, norm="layer"):
         super(BottleneckMLP, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
@@ -57,11 +57,14 @@ class BottleneckMLP(nn.Module):
         self.blocks = nn.ModuleList(blocks)
         self.layernorms = nn.ModuleList(layernorms)
 
-    def forward(self, x):
+    def forward(self, x, pre_logits=False):
         x = self.linear_in(x)
 
         for block, norm in zip(self.blocks, self.layernorms):
             x = x + block(norm(x))
+
+        if pre_logits:
+            return x
 
         out = self.linear_out(x)
 

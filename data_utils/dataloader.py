@@ -33,6 +33,7 @@ def get_loader(
     mode,
     augment,
     dev,
+    sequential_train_order=False,
     data_resolution=None,
     crop_resolution=None,
     crop_ratio=(0.75, 1.3333333333333333),
@@ -40,9 +41,9 @@ def get_loader(
     num_samples=None,
     dtype=torch.float32,
     mixup=None,
-    data_path='./beton',
+    data_path="./beton",
 ):
-    mode_name = MODE_DICT[dataset] if mode != 'train' else mode
+    mode_name = MODE_DICT[dataset] if mode != "train" else mode
     os_cache = OS_CACHED_DICT[dataset]
 
     if data_resolution is None:
@@ -50,39 +51,47 @@ def get_loader(
     if crop_resolution is None:
         crop_resolution = data_resolution
 
-    real = '' if dataset != 'imagenet_real' or mode == 'train' else 'real_'
-    sub_sampled = '' if num_samples is None or num_samples == SAMPLE_DICT[dataset] else '_ntrain_' + str(num_samples)
+    real = "" if dataset != "imagenet_real" or mode == "train" else "real_"
+    sub_sampled = (
+        ""
+        if num_samples is None or num_samples == SAMPLE_DICT[dataset]
+        else "_ntrain_" + str(num_samples)
+    )
 
     beton_path = os.path.join(
         data_path,
         DATA_DICT[dataset],
-        'ffcv',
+        "ffcv",
         mode_name,
-        real + f'{mode_name}_{data_resolution}' + sub_sampled + '.beton',
+        real + f"{mode_name}_{data_resolution}" + sub_sampled + ".beton",
     )
 
-    print(f'Loading {beton_path}')
+    print(f"Loading {beton_path}")
 
     mean = MEAN_DICT[dataset]
     std = STD_DICT[dataset]
 
-    if dataset == 'imagenet_real' and mode != 'train':
+    if dataset == "imagenet_real" and mode != "train":
         label_pipeline: List[Operation] = [NDArrayDecoder()]
     else:
         label_pipeline: List[Operation] = [IntDecoder()]
 
     if augment:
         image_pipeline: List[Operation] = [
-            RandomResizedCropRGBImageDecoder((crop_resolution, crop_resolution), ratio=crop_ratio, scale=crop_scale),
+            RandomResizedCropRGBImageDecoder(
+                (crop_resolution, crop_resolution), ratio=crop_ratio, scale=crop_scale
+            ),
             RandomHorizontalFlip(),
         ]
     else:
         image_pipeline: List[Operation] = [
-            CenterCropRGBImageDecoder(output_size=(crop_resolution, crop_resolution), ratio=1)
+            CenterCropRGBImageDecoder(
+                output_size=(crop_resolution, crop_resolution), ratio=1
+            )
         ]
 
     # Add image transforms and normalization
-    if mode == 'train' and augment and mixup > 0:
+    if mode == "train" and augment and mixup > 0:
         image_pipeline.extend([ImageMixup(alpha=mixup, same_lambda=True)])
         label_pipeline.extend([LabelMixup(alpha=mixup, same_lambda=True)])
 
@@ -98,7 +107,7 @@ def get_loader(
         ]
     )
 
-    if mode == 'train':
+    if mode == "train":
         num_samples = SAMPLE_DICT[dataset] if num_samples is None else num_samples
 
         # Shuffle indices in case the classes are ordered
@@ -113,9 +122,11 @@ def get_loader(
         beton_path,
         batch_size=bs,
         num_workers=4,
-        order=OrderOption.QUASI_RANDOM if mode == 'train' else OrderOption.SEQUENTIAL,
-        drop_last=(mode == 'train'),
-        pipelines={'image': image_pipeline, 'label': label_pipeline},
+        order=OrderOption.QUASI_RANDOM
+        if mode == "train" and not sequential_train_order
+        else OrderOption.SEQUENTIAL,
+        drop_last=(mode == "train"),
+        pipelines={"image": image_pipeline, "label": label_pipeline},
         os_cache=os_cache,
         indices=indices,
     )

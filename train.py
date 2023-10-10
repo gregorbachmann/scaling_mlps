@@ -15,6 +15,8 @@ from utils.config import config_to_name
 from utils.get_compute import get_compute
 from utils.metrics import topk_acc, real_acc, AverageMeter
 from utils.optimizer import get_optimizer, get_scheduler, OPTIMIZERS_DICT, SCHEDULERS
+from few_shot import get_loaders as get_few_shot_loaders
+from few_shot import do_few_shot
 
 
 def train(model, opt, scheduler, loss_fn, epoch, train_loader, args):
@@ -24,7 +26,9 @@ def train(model, opt, scheduler, loss_fn, epoch, train_loader, args):
     total_acc, total_top5 = AverageMeter(), AverageMeter()
     total_loss = AverageMeter()
 
-    for step, (ims, targs) in enumerate(tqdm(train_loader, desc="Training epoch: " + str(epoch))):
+    for step, (ims, targs) in enumerate(
+        tqdm(train_loader, desc="Training epoch: " + str(epoch))
+    ):
         ims = torch.reshape(ims, (ims.shape[0], -1))
         preds = model(ims)
 
@@ -75,10 +79,14 @@ def test(model, loader, loss_fn, args):
     total_acc, total_top5, total_loss = AverageMeter(), AverageMeter(), AverageMeter()
 
     for ims, targs in tqdm(loader, desc="Evaluation"):
+        if ims.device != args.device:
+            ims = ims.to(args.device)
+            targs = targs.to(args.device)
+
         ims = torch.reshape(ims, (ims.shape[0], -1))
         preds = model(ims)
 
-        if args.dataset != 'imagenet_real':
+        if args.dataset != "imagenet_real":
             acc, top5 = topk_acc(preds, targs, k=5, avg=True)
             loss = loss_fn(preds, targs).item()
         else:
@@ -104,6 +112,7 @@ def main(args):
     # Use mixed precision matrix multiplication
     torch.backends.cuda.matmul.allow_tf32 = True
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    args.device = device
 
     model = get_architecture(**args.__dict__).cuda()
 
@@ -117,7 +126,7 @@ def main(args):
     # Create folder to store the checkpoints
     if not os.path.exists(path):
         os.makedirs(path)
-        with open(path + '/config.txt', 'w') as f:
+        with open(path + "/config.txt", "w") as f:
             json.dump(args.__dict__, f, indent=2)
 
     # Get the dataloaders
@@ -133,7 +142,7 @@ def main(args):
         mixup=args.mixup,
         data_path=args.data_path,
         data_resolution=args.resolution,
-        crop_resolution=args.crop_resolution
+        crop_resolution=args.crop_resolution,
     )
 
     test_loader = get_loader(
@@ -144,8 +153,17 @@ def main(args):
         dev=device,
         data_path=args.data_path,
         data_resolution=args.resolution,
-        crop_resolution=args.crop_resolution
+        crop_resolution=args.crop_resolution,
     )
+
+    if args.downstream_dataset is not None:
+        downstream_train_loader, downstream_test_loader = get_few_shot_loaders(
+            args.downstream_dataset,
+            args.downstream_data_resolution,
+            args.downstream_n_few_shot,
+            args.downstream_num_classes,
+            args.__dict__,
+        )
 
     start_ep = 1
     if args.reload:
@@ -156,7 +174,9 @@ def main(args):
         except:
             print("No pretrained model found, training from scratch")
 
-    opt = get_optimizer(args.optimizer)(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    opt = get_optimizer(args.optimizer)(
+        model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+    )
     scheduler = get_scheduler(opt, args.scheduler, **args.__dict__)
 
     loss_fn = CrossEntropyLoss(label_smoothing=args.smooth)
@@ -195,6 +215,7 @@ def main(args):
             test_acc, test_top5, test_loss, test_time = test(
                 model, test_loader, loss_fn, args
             )
+
             if args.wandb:
                 wandb.log(
                     {
@@ -204,7 +225,8 @@ def main(args):
                         "Test Top 5 accuracy": test_top5,
                         "Test loss": test_loss,
                         "Inference time": test_time,
-                    }
+                    },
+                    step=ep,
                 )
 
             # Print all the stats
@@ -219,6 +241,28 @@ def main(args):
             print("Top 5 Test Accuracy          ", "{:.4f}".format(test_top5))
             print()
 
+            if args.downstream_dataset is not None:
+                downstream_accuracies = do_few_shot(
+                    model,
+                    downstream_train_loader,
+                    downstream_test_loader,
+                    args.downstream_regularization,
+                )
+
+                if args.wandb:
+                    wandb.log(
+                        {
+                            "Downstream top1": downstream_accuracies[0],
+                            "Downstream top5": downstream_accuracies[1],
+                        },
+                        step=ep,
+                    )
+
+                print(
+                    "Downstream accuracies (top1, top5)",
+                    downstream_accuracies,
+                )
+
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Scaling MLPs")
@@ -229,7 +273,9 @@ def get_parser():
     )
     parser.add_argument("--dataset", default="imagenet21", type=str, help="Dataset")
     parser.add_argument("--resolution", default=64, type=int, help="Image Resolution")
-    parser.add_argument("--crop_resolution", default=None, type=int, help="Crop Resolution")
+    parser.add_argument(
+        "--crop_resolution", default=None, type=int, help="Crop Resolution"
+    )
     parser.add_argument(
         "--n_train", default=None, type=int, help="Number of samples. None for all"
     )
@@ -260,7 +306,9 @@ def get_parser():
         choices=OPTIMIZERS_DICT.keys(),
     )
     parser.add_argument("--batch_size", default=4096, type=int, help="Batch size")
-    parser.add_argument("--accum_steps", default=1, type=int, help="Number of accumulation steps")
+    parser.add_argument(
+        "--accum_steps", default=1, type=int, help="Number of accumulation steps"
+    )
     parser.add_argument("--lr", default=0.00005, type=float, help="Learning rate")
     parser.add_argument(
         "--scheduler", type=str, default="none", choices=SCHEDULERS, help="Scheduler"
@@ -270,13 +318,27 @@ def get_parser():
     parser.add_argument(
         "--smooth", default=0.3, type=float, help="Amount of label smoothing"
     )
-    parser.add_argument("--clip", default=0., type=float, help="Gradient clipping")
+    parser.add_argument("--clip", default=0.0, type=float, help="Gradient clipping")
     parser.add_argument(
         "--reload",
         action=argparse.BooleanOptionalAction,
         default=False,
         help="Reinitialize from checkpoint",
     )
+    # Downstream
+    parser.add_argument(
+        "--downstream_dataset", default="imagenet", type=str, help="Downstream dataset"
+    )
+    parser.add_argument(
+        "--downstream_data_resolution",
+        default=64,
+        type=int,
+        help="Downstream data resolution",
+    )
+    parser.add_argument(
+        "--downstream_n_few_shot", default=10, type=int, help="Downstream n-shot"
+    )
+    parser.add_argument("--downstream_regularization", type=float, default=1e-2)
     # Logging
     parser.add_argument(
         "--calculate_stats",
@@ -318,6 +380,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     args.num_classes = CLASS_DICT[args.dataset]
+
+    if args.downstream_dataset is not None:
+        args.downstream_num_classes = CLASS_DICT[args.downstream_dataset]
 
     if args.n_train is None:
         args.n_train = SAMPLE_DICT[args.dataset]
