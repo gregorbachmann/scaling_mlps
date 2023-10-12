@@ -88,8 +88,6 @@ def finetune(args):
         data_path=args.data_path,
         data_resolution=args.data_resolution,
         crop_resolution=args.crop_resolution,
-        crop_ratio=tuple(args.crop_ratio),
-        crop_scale=tuple(args.crop_scale)
     )
 
     test_loader_aug = get_loader(
@@ -154,7 +152,6 @@ def finetune(args):
 
     scheduler = get_scheduler(opt, args.scheduler, **args.__dict__)
     loss_fn = CrossEntropyLoss(label_smoothing=args.smooth)
-    optimal_acc = 0
 
     for ep in range(args.epochs):
         train_acc, train_top5, train_loss, train_time = train(
@@ -176,10 +173,6 @@ def finetune(args):
             print('Test Accuracy        ', '{:.4f}'.format(test_acc))
             print('Top 5 Test Accuracy          ', '{:.4f}'.format(test_top5))
             print()
-
-            if test_acc > optimal_acc:
-                optimal_acc = test_acc
-                #torch.save(model.state_dict(), path + '/optimal_params')
 
     print('-------- Test Time Augmentation Evaluation -------')
     

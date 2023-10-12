@@ -214,7 +214,6 @@ def main(args):
             print("Average Training Accuracy:   ", "{:.4f}".format(train_acc))
             print("Top 5 Training Accuracy:     ", "{:.4f}".format(train_top5))
             print("---------------- Test ------------------")
-            print("Current Optimal Accuracy     ", "{:.4f}".format(optimal_acc))
             print("Test Accuracy        ", "{:.4f}".format(test_acc))
             print("Top 5 Test Accuracy          ", "{:.4f}".format(test_top5))
             print()
