@@ -7,8 +7,9 @@ def get_architecture(
     num_channels=3,
     crop_resolution=None,
     num_classes=None,
-    normalization='layer',
+    normalization="layer",
     descriptor=False,
+    projector=None,
     **kwargs,
 ):
     assert model in ["BottleneckMLP", "MLP"], f"Model {model} not supported."
@@ -29,7 +30,8 @@ def get_architecture(
             dim_in=dim_in,
             dim_out=num_classes,
             block_dims=blocks,
-            norm=normalization
+            norm=normalization,
+            projector=projector,
         )
 
     elif model == "MLP":
@@ -39,4 +41,5 @@ def get_architecture(
             dim_in=crop_resolution**2 * num_channels,
             dim_out=num_classes,
             widths=blocks,
+            projector=projector,
         )

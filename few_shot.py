@@ -67,11 +67,15 @@ def create_few_shot_loader_fn(loader, n_few_shot=10, num_classes=1000, batch_siz
     return few_shot_loader
 
 
-def get_embeddings(model, loader):
+def get_embeddings(model, loader, close):
     features = []
     labels = []
 
-    for batch in tqdm(loader, desc="Getting embeddings"):
+    iterator = iter(loader)
+
+    for batch in tqdm(range(len(loader)), desc="Getting embeddings"):
+        batch = next(iterator)
+
         ims, targets = batch[0], batch[1]
         ims = torch.reshape(ims, (ims.shape[0], -1))
 
@@ -81,6 +85,13 @@ def get_embeddings(model, loader):
 
     features = torch.cat(features)
     labels = torch.cat(labels)
+
+    if close:
+        ## ffcv cleaning up
+        iterator.close()
+        del iterator
+
+    gc.collect()
 
     return features.numpy(), labels.numpy()
 
@@ -94,8 +105,8 @@ def one_hot_to_categorical(labels):
 
 
 def do_few_shot(model, train_loader, test_loader, regularization):
-    train_features, train_labels = get_embeddings(model, train_loader)
-    test_faetures, test_labels = get_embeddings(model, test_loader)
+    train_features, train_labels = get_embeddings(model, train_loader, close=False)
+    test_faetures, test_labels = get_embeddings(model, test_loader, close=True)
 
     reg = linear_model.Ridge(alpha=regularization, solver="cholesky")
 
@@ -105,6 +116,16 @@ def do_few_shot(model, train_loader, test_loader, regularization):
     accuracies = topk_acc(
         torch.tensor(predictions), torch.tensor(test_labels), avg=True
     )
+
+    del (
+        train_features,
+        train_labels,
+        test_faetures,
+        test_labels,
+        reg,
+        predictions,
+    )
+
     return accuracies
 
 

@@ -5,7 +5,6 @@ import json
 
 import torch
 import wandb
-from torch.nn import CrossEntropyLoss
 from tqdm import tqdm
 
 from models import get_architecture
@@ -15,6 +14,7 @@ from utils.config import config_to_name
 from utils.get_compute import get_compute
 from utils.metrics import topk_acc, real_acc, AverageMeter
 from utils.optimizer import get_optimizer, get_scheduler, OPTIMIZERS_DICT, SCHEDULERS
+from utils.losses import get_loss_function
 from few_shot import get_loaders as get_few_shot_loaders
 from few_shot import do_few_shot
 
@@ -37,15 +37,18 @@ def train(model, opt, scheduler, loss_fn, epoch, train_loader, args):
             weight = targs[0, 2].squeeze()
             targs = targs[:, 0].long()
             if weight != -1:
-                loss = loss_fn(preds, targs) * weight + loss_fn(preds, targs_perm) * (
-                    1 - weight
-                )
+                loss = loss_fn(ims, targs, preds) * weight + loss_fn(
+                    ims, targs_perm, preds
+                ) * (1 - weight)
             else:
-                loss = loss_fn(preds, targs)
+                loss = loss_fn(ims, targs, preds)
                 targs_perm = None
         else:
-            loss = loss_fn(preds, targs)
+            loss = loss_fn(ims, targs, preds)
             targs_perm = None
+
+        if type(preds) == tuple:
+            preds = preds[0]
 
         acc, top5 = topk_acc(preds, targs, targs_perm, k=5, avg=True)
         total_acc.update(acc, ims.shape[0])
@@ -86,9 +89,13 @@ def test(model, loader, loss_fn, args):
         ims = torch.reshape(ims, (ims.shape[0], -1))
         preds = model(ims)
 
+        loss = loss_fn(ims, targs, preds).item()
+
+        if type(preds) == tuple:
+            preds = preds[0]
+
         if args.dataset != "imagenet_real":
             acc, top5 = topk_acc(preds, targs, k=5, avg=True)
-            loss = loss_fn(preds, targs).item()
         else:
             acc = real_acc(preds, targs, k=5, avg=True)
             top5 = 0
@@ -112,7 +119,6 @@ def main(args):
     # Use mixed precision matrix multiplication
     torch.backends.cuda.matmul.allow_tf32 = True
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    args.device = device
 
     model = get_architecture(**args.__dict__).cuda()
 
@@ -120,7 +126,7 @@ def main(args):
     args.num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     # Create unique identifier
-    name = config_to_name(args)
+    name = config_to_name(args) if args.name is None else args.name
     path = os.path.join(args.checkpoint_folder, name)
 
     # Create folder to store the checkpoints
@@ -128,6 +134,8 @@ def main(args):
         os.makedirs(path)
         with open(path + "/config.txt", "w") as f:
             json.dump(args.__dict__, f, indent=2)
+
+    args.device = device
 
     # Get the dataloaders
     local_batch_size = args.batch_size // args.accum_steps
@@ -179,7 +187,8 @@ def main(args):
     )
     scheduler = get_scheduler(opt, args.scheduler, **args.__dict__)
 
-    loss_fn = CrossEntropyLoss(label_smoothing=args.smooth)
+    loss_fn = get_loss_function(args)
+    optimal_acc = 0
 
     if args.wandb:
         # Add your wandb credentials and project name
@@ -188,8 +197,8 @@ def main(args):
             entity=args.wandb_entity,
             config=args.__dict__,
             tags=["pretrain", args.dataset],
+            name=name,
         )
-        wandb.run.name = name
 
     compute_per_epoch = get_compute(model, args.n_train, args.crop_resolution)
 
@@ -215,6 +224,10 @@ def main(args):
             test_acc, test_top5, test_loss, test_time = test(
                 model, test_loader, loss_fn, args
             )
+
+            if test_acc > optimal_acc:
+                optimal_acc = test_acc
+                torch.save(model.state_dict(), path + "/optimal_params")
 
             if args.wandb:
                 wandb.log(
@@ -320,6 +333,15 @@ def get_parser():
     )
     parser.add_argument("--clip", default=0.0, type=float, help="Gradient clipping")
     parser.add_argument(
+        "--training_objective",
+        default="supervised",
+        type=str,
+        help="Training objective",
+        choices=["supervised", "reconstruct"],
+    )
+    parser.add_argument("--projector", default=None, type=str, help="Projector type")
+
+    parser.add_argument(
         "--reload",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -371,7 +393,7 @@ def get_parser():
     parser.add_argument(
         "--wandb_entity", default=None, type=str, help="Wandb entity name"
     )
-
+    parser.add_argument("--name", default=None, type=str, help="Name of experiment")
     return parser
 
 
