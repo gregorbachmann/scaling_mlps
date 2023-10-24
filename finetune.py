@@ -1,4 +1,3 @@
-import argparse
 import os
 import json
 
@@ -9,6 +8,7 @@ from tqdm import tqdm
 from data_utils.data_stats import *
 from data_utils.dataloader import get_loader
 from models import get_architecture
+from utils.parsers import get_finetune_parser
 from utils.config import config_to_name, model_from_config
 from utils.metrics import topk_acc, real_acc
 from utils.optimizer import (
@@ -183,76 +183,7 @@ def finetune(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Scaling MLPs")
-    # Data
-    parser.add_argument(
-        "--data_path", default="./beton", type=str, help="Path to data directory"
-    )
-    parser.add_argument("--dataset", default="cifar100", type=str, help="Dataset")
-    parser.add_argument("--data_resolution", default=64, type=int, help="Image Resolution")
-    parser.add_argument(
-        "--n_train", default=None, type=int, help="Number of samples. None for all"
-    )
-    parser.add_argument(
-        "--augment",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Whether to augment data",
-    )
-    parser.add_argument("--mixup", default=0., type=float, help="Strength of mixup")
-    parser.add_argument('--crop_scale', nargs='+', type=float, default=[0.08, 1.], help="Scale for crop at test time")
-    parser.add_argument('--crop_ratio', nargs='+', type=float, default=[0.08, 1.], help="Ratio for crop at test time")
-
-    # Training
-    parser.add_argument(
-        "--optimizer",
-        default="sgd",
-        type=str,
-        help="Choice of optimizer",
-        choices=OPTIMIZERS_DICT.keys(),
-    )
-    parser.add_argument("--batch_size", default=4096, type=int, help="Batch size")
-    parser.add_argument("--accum_steps", default=1, type=int, help="Number of accumulation steps")
-    parser.add_argument("--lr", default=0.01, type=float, help="Learning rate")
-    parser.add_argument(
-        "--scheduler", type=str, default="none", choices=SCHEDULERS, help="Scheduler"
-    )
-    parser.add_argument("--weight_decay", default=0.0, type=float, help="Weight decay")
-    parser.add_argument("--epochs", default=500, type=int, help="Epochs")
-    parser.add_argument(
-        "--smooth", default=0.3, type=float, help="Amount of label smoothing"
-    )
-    parser.add_argument("--clip", default=1.0, type=float, help="Gradient clipping")
-
-    # Misc
-    parser.add_argument(
-        "--mode",
-        default="linear",
-        type=str,
-        help="Mode",
-        choices=["linear", "finetune"],
-    )
-    parser.add_argument(
-        "--checkpoint_folder",
-        default="./checkpoints_finetune",
-        type=str,
-        help="Folder to store checkpoints",
-    )
-    parser.add_argument(
-        "--checkpoint_path", default=None, type=str, help="Checkpoint", required=True
-    )
-    parser.add_argument(
-        "--body_learning_rate_multiplier",
-        default=0.1,
-        type=float,
-        help="Percentage of learning rate for the body",
-    )
-    parser.add_argument(
-        "--calculate_stats",
-        type=int,
-        default=1,
-        help="Frequency of calculating stats",
-    )
+    parser = get_finetune_parser()
     args = parser.parse_args()
 
     args.num_classes = CLASS_DICT[args.dataset]

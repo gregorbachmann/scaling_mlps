@@ -3,7 +3,13 @@ from torch import nn
 
 NORMS = {
     'layer': nn.LayerNorm,
-    'batch': nn.BatchNorm1d
+    'batch': nn.BatchNorm1d,
+    'none': nn.Identity
+}
+
+ACT = {
+    'gelu': nn.GELU(),
+    'relu': nn.ReLU()
 }
 
 
@@ -37,31 +43,37 @@ class StandardMLP(nn.Module):
 
 
 class BottleneckMLP(nn.Module):
-    def __init__(self, dim_in, dim_out, block_dims, norm='layer'):
+    def __init__(self, dim_in, dim_out, block_dims, norm='layer', act='GELU', drop_rate=None):
         super(BottleneckMLP, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.block_dims = block_dims
         self.norm = NORMS[norm]
+        self.act = ACT[act]
+        self.drop_rate = drop_rate
 
+        self.dropout = nn.Dropout(self.drop_rate) if self.drop_rate is not None else nn.Identity()
         self.linear_in = nn.Linear(self.dim_in, self.block_dims[0][1])
         self.linear_out = nn.Linear(self.block_dims[-1][1], self.dim_out)
+
         blocks = []
-        layernorms = []
+        norms = []
 
         for block_dim in self.block_dims:
             wide, thin = block_dim
-            blocks.append(BottleneckBlock(thin=thin, wide=wide))
-            layernorms.append(self.norm(thin))
+            blocks.append(BottleneckBlock(thin=thin, wide=wide, act=self.act))
+            norms.append(self.norm(thin))
 
         self.blocks = nn.ModuleList(blocks)
-        self.layernorms = nn.ModuleList(layernorms)
+        self.norms = nn.ModuleList(norms)
 
     def forward(self, x):
         x = self.linear_in(x)
-
-        for block, norm in zip(self.blocks, self.layernorms):
+        x = self.dropout(x)
+        
+        for block, norm in zip(self.blocks, self.norms):
             x = x + block(norm(x))
+            x = self.dropout(x)
 
         out = self.linear_out(x)
 
@@ -69,11 +81,11 @@ class BottleneckMLP(nn.Module):
 
 
 class BottleneckBlock(nn.Module):
-    def __init__(self, thin, wide):
+    def __init__(self, thin, wide, act=nn.GELU()):
         super(BottleneckBlock, self).__init__()
 
         self.block = nn.Sequential(
-            nn.Linear(thin, wide), nn.GELU(), nn.Linear(wide, thin)
+            nn.Linear(thin, wide), act, nn.Linear(wide, thin)
         )
 
     def forward(self, x):

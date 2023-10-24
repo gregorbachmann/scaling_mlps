@@ -8,7 +8,7 @@ def config_to_name(args):
         f"{args.model}_{args.architecture}_norm_{args.normalization}",
         f"batchsize_{args.batch_size}",
         f"{args.optimizer}_lr_{args.lr}_smooth_{args.smooth}"
-        + f"_decay_{args.weight_decay}_augment_{args.augment}_mixup_{args.mixup}",
+        + f"_decay_{args.weight_decay}_augment_{args.augment}_mixup_{args.mixup}_droprate_{args.drop_rate}",
         f"ntrain_{args.n_train}",
     )
 
