@@ -102,10 +102,11 @@ def get_loader(
         num_samples = SAMPLE_DICT[dataset] if num_samples is None else num_samples
 
         # Shuffle indices in case the classes are ordered
-        indices = list(range(num_samples))
+        #indices = list(range(num_samples))
 
-        random.seed(0)
-        random.shuffle(indices)
+        #random.seed(0)
+        #random.shuffle(indices)
+        indices = None
     else:
         indices = None
 

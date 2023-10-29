@@ -47,7 +47,7 @@ def test_time_aug(model, loader, num_augs, args):
         acc = real_acc(all_preds, targets, k=5, avg=True)
         top5 = 0.
 
-    return acc, top5
+    return 100 * acc, 100 * top5
 
 
 def finetune(args):

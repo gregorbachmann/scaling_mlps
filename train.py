@@ -47,15 +47,16 @@ def train(model, opt, scheduler, loss_fn, epoch, train_loader, args):
         total_acc.update(acc, ims.shape[0])
         total_top5.update(top5, ims.shape[0])
 
-        loss /= args.accum_steps
+        loss = loss / args.accum_steps
         loss.backward()
-        if step % args.accum_steps == 0:
+        
+        if (step + 1) % args.accum_steps == 0 or (step + 1) == len(train_loader):
             if args.clip > 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
             opt.step()
             opt.zero_grad()
 
-        total_loss.update(loss.item(), ims.shape[0])
+        total_loss.update(loss.item() * args.accum_steps, ims.shape[0])
 
     end = time.time()
 

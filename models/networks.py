@@ -43,7 +43,7 @@ class StandardMLP(nn.Module):
 
 
 class BottleneckMLP(nn.Module):
-    def __init__(self, dim_in, dim_out, block_dims, norm='layer', act='GELU', drop_rate=None):
+    def __init__(self, dim_in, dim_out, block_dims, norm='layer', act='gelu', drop_rate=None):
         super(BottleneckMLP, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
@@ -57,21 +57,21 @@ class BottleneckMLP(nn.Module):
         self.linear_out = nn.Linear(self.block_dims[-1][1], self.dim_out)
 
         blocks = []
-        norms = []
+        layernorms = []
 
         for block_dim in self.block_dims:
             wide, thin = block_dim
             blocks.append(BottleneckBlock(thin=thin, wide=wide, act=self.act))
-            norms.append(self.norm(thin))
+            layernorms.append(self.norm(thin))
 
         self.blocks = nn.ModuleList(blocks)
-        self.norms = nn.ModuleList(norms)
+        self.layernorms = nn.ModuleList(layernorms)
 
     def forward(self, x):
         x = self.linear_in(x)
         x = self.dropout(x)
         
-        for block, norm in zip(self.blocks, self.norms):
+        for block, norm in zip(self.blocks, self.layernorms):
             x = x + block(norm(x))
             x = self.dropout(x)
 
