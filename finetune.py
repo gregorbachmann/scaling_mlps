@@ -173,6 +173,12 @@ def finetune(args):
             print('Test Accuracy        ', '{:.4f}'.format(test_acc))
             print('Top 5 Test Accuracy          ', '{:.4f}'.format(test_top5))
             print()
+        
+        if ep % args.save_freq == 0 and args.save:
+            torch.save(
+                model.state_dict(),
+                path + "/epoch_" + str(ep),
+            )
 
     print('-------- Test Time Augmentation Evaluation -------')
     

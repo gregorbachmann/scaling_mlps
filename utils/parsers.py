@@ -255,7 +255,7 @@ def get_finetune_parser():
         help="Folder to store checkpoints",
     )
     parser.add_argument(
-        "--checkpoint_path", default=None, type=str, help="Checkpoint", required=True
+        "--checkpoint_path", default='checkpoints_finetune', type=str, help="Checkpoint", required=True
     )
     parser.add_argument(
         "--body_learning_rate_multiplier",
@@ -268,6 +268,18 @@ def get_finetune_parser():
         type=int,
         default=1,
         help="Frequency of calculating stats",
+    )
+    parser.add_argument(
+        "--save_freq", 
+        type=int,
+        default=20, 
+        help="Save frequency"
+    )
+    parser.add_argument(
+        "--save",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Whether to save checkpoints",
     )
 
     return parser
