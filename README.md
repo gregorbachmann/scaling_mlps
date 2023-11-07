@@ -9,9 +9,21 @@ This repository contains the code accompanying our [paper](https://arxiv.org/abs
 ​
 Moreover, MLPs still remain to be the main protagonists in ML theory works but surprisingly, very little is known about their empirical performance at scale! We aim to close this gap here and provide the community with very performant MLPs to analyse!
 ​
+## Explore
+You can easily explore our pre-trained and fine-tuned models by specifying the pretrained flag. For instance, to load a BottleneckMLP with 12 blocks of width 1024, pre-trained on Imagenet21k, simply run
+>`from models.networks import B_12_Wi_1024`
+>` `
+>`model = B_12_Wi_1024(dim_in=64 * 64 * 3, dim_out=11230, pretrained=True)`
+
+If you need an already fine-tuned model, you can specify 
+>`from models.networks import B_12_Wi_1024`
+>` `
+>`model = B_12_Wi_1024(dim_in=64 * 64 * 3, dim_out=10, pretrained='cifar10')`
+
+Check-out the Juypter notebook *explore.ipynb* to play around with the models.
 ## Pretrained Models
-​
-We publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing). Fine-tuning the $800$ epochs models for $100$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
+
+We further publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing). Fine-tuning the $800$ epochs models for $100$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
 
 |                  | #Params | CIFAR10 | CIFAR100 | STL10 | TinyImageNet | ImageNet | ImageNetReal
 | ---------------- | ------- | ------- | -------- | ----- | ------------ | ---------- | ------------
