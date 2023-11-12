@@ -1,4 +1,10 @@
+import json
+
 from torch import nn
+import torch
+import numpy as np
+
+from utils.download import download, default_checkpoints
 
 
 NORMS = {
@@ -43,15 +49,15 @@ class StandardMLP(nn.Module):
 
 
 class BottleneckMLP(nn.Module):
-    def __init__(self, dim_in, dim_out, block_dims, norm='layer', pretrained=False):
+    def __init__(self, dim_in, dim_out, block_dims, norm='layer', checkpoint=None, name=None):
         super(BottleneckMLP, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.block_dims = block_dims
         self.norm = NORMS[norm]
-        self.pretrained = pretrained
+        self.checkpoint = checkpoint
 
-        self.name = 'B-' + str(len(block_dims)) + '_Wi-' + str(block_dims[0][1]) + '_res_' + str(int(np.sqrt(dim_in/3)))
+        self.name = name
         self.linear_in = nn.Linear(self.dim_in, self.block_dims[0][1])
         self.linear_out = nn.Linear(self.block_dims[-1][1], self.dim_out)
         blocks = []
@@ -65,8 +71,8 @@ class BottleneckMLP(nn.Module):
         self.blocks = nn.ModuleList(blocks)
         self.layernorms = nn.ModuleList(layernorms)
 
-        if pretrained is not False:
-            self.load(pretrained)
+        if self.checkpoint is not None:
+            self.load(self.checkpoint)
 
     def forward(self, x):
         x = self.linear_in(x)
@@ -79,16 +85,17 @@ class BottleneckMLP(nn.Module):
         return out
 
     def load(self, name, checkpoint_path='./checkpoints/'):
-        if name == True:
+        #if name == True:
             # This simply assumes Imagenet21 pre-trained weights at the latest epoch available, no fine-tuning
-            name = default_checkpoints[self.name]
-        elif name in ['cifar10', 'cifar100', 'imagenet']:
+        #    name = default_checkpoints[self.name]
+        #elif name in ['cifar10', 'cifar100', 'imagenet']:
             # This loads the optimal fine-tuned weights for that dataset
-            name = default_checkpoints[self.name + '_' + name]
-        else:
+        #    name = default_checkpoints[self.name + '_' + name]
+        #else:
             # This assumes a full path, e.g. also specifying which epoch etc
-            name = self.name + '_' + name
-
+        #    name = self.name + '_' + name
+        name = self.name + '_' + name
+        name = default_checkpoints[name]
         weight_path, config_path = download(name, checkpoint_path)
 
         with open(config_path, 'r') as f:
@@ -100,7 +107,7 @@ class BottleneckMLP(nn.Module):
         }
 
         # Load pre-trained parameters
-        print('Load_state output', self.load_state_dict(params, strict=True))
+        print('Load_state output', self.load_state_dict(params, strict=False))
 
 
 class BottleneckBlock(nn.Module):
@@ -117,36 +124,37 @@ class BottleneckBlock(nn.Module):
         return out
 
 
-def B_12_Wi_1024(dim_in, dim_out, pretrained=False):
+def B_12_Wi_1024(dim_in, dim_out, checkpoint=None):
     block_dims = [[4 * 1024, 1024] for _ in range(12)]
-    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, pretrained=pretrained)
+    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, checkpoint=checkpoint,
+                         name='B_' + str(len(block_dims)) + '-Wi_' + str(block_dims[0][1]) + '_res_' + str(int(np.sqrt(dim_in/3))))
 
 
-def B_12_Wi_512(dim_in, dim_out, pretrained=False):
+def B_12_Wi_512(dim_in, dim_out, checkpoint=None):
     block_dims = [[4 * 512, 512] for _ in range(12)]
-    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, pretrained=pretrained)
+    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, checkpoint=checkpoint,
+                         name='B_' + str(len(block_dims)) + '-Wi_' + str(block_dims[0][1]) + '_res_' + str(int(np.sqrt(dim_in/3))))
 
 
-def B_6_Wi_1024(dim_in, dim_out, pretrained=False):
+def B_6_Wi_1024(dim_in, dim_out, checkpoint=None):
     block_dims = [[4 * 1024, 1024] for _ in range(6)]
-    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, pretrained=pretrained)
+    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, checkpoint=checkpoint,
+                         name='B_' + str(len(block_dims)) + '-Wi_' + str(block_dims[0][1]) + '_res_' + str(int(np.sqrt(dim_in/3))))
 
 
-def B_6_Wi_512(dim_in, dim_out, pretrained=False):
+def B_6_Wi_512(dim_in, dim_out, checkpoint=None):
     block_dims = [[4 * 512, 512] for _ in range(6)]
-    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, pretrained=pretrained)
+    return BottleneckMLP(dim_in=dim_in, dim_out=dim_out, norm='layer', block_dims=block_dims, checkpoint=checkpoint,
+                         name='B_' + str(len(block_dims)) + '-Wi_' + str(block_dims[0][1]) + '_res_' + str(int(np.sqrt(dim_in/3))))
 
 
+model_list = {
+    'B_12-Wi_1024': B_12_Wi_1024,
+    'B_12-Wi_512': B_12_Wi_512,
+    'B_6-Wi_1024': B_6_Wi_1024,
+    'B_6-Wi_512': B_6_Wi_512
+}
 
-class Linear(nn.Module):
-    """For readability"""
 
-    def __init__(self, dim_in, dim_out):
-        super(Linear, self).__init__()
-        self.dim_in = dim_in
-        self.dim_out = dim_out
-
-        self.linear = nn.Linear(self.dim_in, self.dim_out)
-
-    def forward(self, x):
-        return self.linear(x)
+def get_model(architecture, checkpoint, resolution, num_classes):
+    return model_list[architecture](dim_in=resolution**2 * 3, dim_out=num_classes, checkpoint=checkpoint)

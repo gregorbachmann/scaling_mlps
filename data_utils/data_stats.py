@@ -16,7 +16,9 @@ SAMPLE_DICT = {
 # Number of classes
 CLASS_DICT = {
     "imagenet21": 11230,
-    "imagenet": 1000,
+    "in21k": 11230,         # Need the short name here too for loading models
+    "imagenet": 1000,   
+    "in1k": 1000,           # Need the short name here too for loading models
     'imagenet_real': 1000,
     "tinyimagenet": 200,
     "cifar10": 10,

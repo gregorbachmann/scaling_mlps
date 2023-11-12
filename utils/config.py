@@ -1,6 +1,8 @@
 import os
 import json
 
+from data_utils.data_stats import CLASS_DICT
+
 
 def config_to_name(args):
     return os.path.join(
@@ -24,3 +26,14 @@ def model_from_config(path):
     crop_resolution = int(config["crop_resolution"])
 
     return model, architecture, crop_resolution, norm
+
+
+def model_from_checkpoint(checkpoint):
+    res = int(checkpoint.split('_')[1])
+    num_classes = CLASS_DICT[checkpoint.split('_')[-1]]
+    if len(checkpoint.split('_')) == 4:
+        pretrained_finetuned = checkpoint.split('_')[-2] + '_' +checkpoint.split('_')[-1]
+    else:
+        pretrained_finetuned = checkpoint.split('_')[-1]
+
+    return pretrained_finetuned, res, num_classes

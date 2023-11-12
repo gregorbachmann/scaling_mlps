@@ -198,6 +198,9 @@ def get_finetune_parser():
     parser.add_argument(
         "--data_path", default="./beton", type=str, help="Path to data directory"
     )
+    parser.add_argument(
+        "--architecture", default="B_12-Wi_1024", type=str, help="Path to data directory"
+    )
     parser.add_argument("--dataset", default="cifar100", type=str, help="Dataset")
     parser.add_argument("--data_resolution", default=64, type=int, help="Image Resolution")
     parser.add_argument(
@@ -255,7 +258,10 @@ def get_finetune_parser():
         help="Folder to store checkpoints",
     )
     parser.add_argument(
-        "--checkpoint_path", default='checkpoints_finetune', type=str, help="Checkpoint", required=True
+        "--checkpoint_path", default=None, type=str, help="Checkpoint", required=False
+    )
+    parser.add_argument(
+        "--checkpoint", default='checkpoints_finetune', type=str, help="Checkpoint", required=False
     )
     parser.add_argument(
         "--body_learning_rate_multiplier",

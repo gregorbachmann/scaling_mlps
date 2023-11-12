@@ -10,17 +10,16 @@ This repository contains the code accompanying our [paper](https://arxiv.org/abs
 Moreover, MLPs still remain to be the main protagonists in ML theory works but surprisingly, very little is known about their empirical performance at scale! We aim to close this gap here and provide the community with very performant MLPs to analyse!
 ​
 ## Explore
-You can easily explore our pre-trained and fine-tuned models by specifying the pretrained flag. For instance, to load a BottleneckMLP with 12 blocks of width 1024, pre-trained on Imagenet21k, simply run
->`from models.networks import B_12_Wi_1024`
->` `
->`model = B_12_Wi_1024(dim_in=64 * 64 * 3, dim_out=11230, pretrained=True)`
+You can easily explore our pre-trained and fine-tuned models by specifying the checkpooint flag. For instance, to load a BottleneckMLP with 12 blocks of width 1024, pre-trained on Imagenet21k, simply run
+>`model = get_model(architecture='B_12-Wi_1024', resolution=64, num_classes=11230,
+                  checkpoint='in21k')`
 
 If you need an already fine-tuned model, you can specify 
->`from models.networks import B_12_Wi_1024`
->` `
->`model = B_12_Wi_1024(dim_in=64 * 64 * 3, dim_out=10, pretrained='cifar10')`
+>`model = get_model(architecture='B_12-Wi_1024', resolution=64, num_classes=10,
+                  checkpoint='in21k_cifar10')`
 
 Check-out the Juypter notebook *explore.ipynb* to play around with the models.
+
 ## Pretrained Models
 
 We further publish our models pre-trained on ImageNet21k for various number of epochs at an image resolution of $64\times 64$ [here](https://drive.google.com/drive/folders/17pbKnQgftxkGW5zZGuUvN1C---DesqOW?usp=sharing). Fine-tuning the $800$ epochs models for $100$ epochs should give you roughly the following down-stream performances (check *Fine-tuning* section for hyper-parameter details)
@@ -71,9 +70,12 @@ Converting a subfolder-structured dataset can be converted to the *.beton* forma
 For more specific configurations, we encourage the user to check out all available flags in `train.py`. In case you run into memory issues, try to reduce the batch-size. We remark however that smaller batch sizes tend to lead worse results, check-out our paper where we highlight this effect. During training, the parameters will automatically be saved to the `checkpoints`folder. 
 ## Fine-tuning
 ​
-You can fine-tune our pre-trained checkpoints or your own using the script `finetune.py`.  For instance, the following command fine-tunes the model specified in the path argument on CIFAR10, provided you have converted the CIFAR10 dataset to the *.beton* format:
-> `python3 finetune.py --checkpoint_path path/to/checkpoint --dataset cifar10 --data_resolution 32 --batch_size 2048 --epochs 100 --lr 0.01 --weight_decay 0.0001 --data_path /local/home/stuff/ --crop_scale 0.4 1. --crop_ratio 1. 1. --optimizer sgd --augment --mode finetune --smooth 0.3`
+You can fine-tune our pre-trained checkpoints or your own using the script `finetune.py`.  For instance, the following command fine-tunes a pre-trained B_12-Wi_1024 model on CIFAR10, provided you have converted the CIFAR10 dataset to the *.beton* format:
+> `python3 finetune.py --architecture B_12-Wi_1024 --checkpoint res_64_in21k --dataset cifar10 --data_resolution 32 --batch_size 2048 --epochs 100 --lr 0.01 --weight_decay 0.0001 --data_path /local/home/stuff/ --crop_scale 0.4 1. --crop_ratio 1. 1. --optimizer sgd --augment --mode finetune --smooth 0.3`
 ​
 
 You can also train a linear layer on top by specifying the flag `--mode linear`instead.
 
+
+## Own Dataset
+If you want to add your own dataset, convert it to the FFCV format as detailed above and make sure to fill in the values provided in data_utils/data_stats for the other datasets, such as number of classes, number of samples etc. 

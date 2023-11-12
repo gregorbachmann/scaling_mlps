@@ -4,13 +4,22 @@ import progressbar
 
 
 default_checkpoints = {
-    'B-12_Wi-1024_res_64': 'B-12_Wi-1024_res_64_imagenet21_epochs_800',
-    'B-12_Wi-512_res_64': 'B-12_Wi-512_res_64_imagenet21_epochs_600',
-    'B-6_Wi-1024_res_64': 'B-6_Wi-1024_res_64_imagenet21_epochs_800',
-    'B-6_Wi-512_res_64': 'B-6_Wi-512_res_64_imagenet21_epochs_800',
-    'B-12_Wi-1024_res_64_cifar10': 'B-12_Wi-1024_res_64_cifar10_epochs_20',
-    'B-12_Wi-1024_res_64_cifar100': 'B-12_Wi-1024_res_64_cifar100_epochs_40',
-    'B-12_Wi-1024_res_64_imagenet': 'B-12_Wi-1024_res_64_imagenet_epochs_50'
+    'B_12-Wi_1024_res_64_in21k': 'B-12_Wi-1024_res_64_imagenet21_epochs_800',
+    'B_12-Wi_512_res_64_in21k': 'B-12_Wi-512_res_64_imagenet21_epochs_600',
+    'B_6-Wi_1024_res_64_in21k': 'B-6_Wi-1024_res_64_imagenet21_epochs_800',
+    'B_6-Wi_512_res_64_in21k': 'B-6_Wi-512_res_64_imagenet21_epochs_800',
+    'B_12-Wi_1024_res_64_in21k_cifar10': 'B-12_Wi-1024_res_64_cifar10_epochs_20',
+    'B_12-Wi_1024_res_64_in21k_cifar100': 'B-12_Wi-1024_res_64_cifar100_epochs_40',
+    'B_12-Wi_1024_res_64_in21k_imagenet': 'B-12_Wi-1024_res_64_imagenet_epochs_50',
+    'B_12-Wi_512_res_64_in21k_cifar10': 'B-12_Wi-512_res_64_cifar10_epochs_20',
+    'B_12-Wi_512_res_64_in21k_cifar100': 'B-12_Wi-512_res_64_cifar100_epochs_20',
+    'B_12-Wi_512_res_64_in21k_imagenet': 'B-12_Wi-512_res_64_imagenet_epochs_20',
+    'B_6-Wi_512_res_64_in21k_cifar10': 'B-6_Wi-512_res_64_cifar10_epochs_20',
+    'B_6-Wi_512_res_64_in21k_cifar100': 'B-6_Wi-512_res_64_cifar100_epochs_20',
+    'B_6-Wi_512_res_64_in21k_imagenet': 'B-6_Wi-512_res_64_imagenet_epochs_20',
+    'B_6-Wi_1024_res_64_in21k_cifar10': 'B-6_Wi-1024_res_64_cifar10_epochs_20',
+    'B_6-Wi_1024_res_64_in21k_cifar100': 'B-6_Wi-1024_res_64_cifar100_epochs_20',
+    'B_6-Wi_1024_res_64_in21k_imagenet': 'B-6_Wi-1024_res_64_imagenet_epochs_20'
 }
 
 weight_urls = {
@@ -27,7 +36,25 @@ weight_urls = {
     'B-12_Wi-1024_res_64_cifar100_epochs_40':
         'https://drive.google.com/uc?id=1LNqC58cSwtuDr-C4bk1O3GA_vAWls-UH&export=download&confirm=t&uuid',
     'B-12_Wi-1024_res_64_imagenet_epochs_50':
-        'https://drive.google.com/uc?id=1MVebvnSGL02k_ql1gUCjh4quGqM9RM4F&export=download&confirm=t&uuid'
+        'https://drive.google.com/uc?id=1MVebvnSGL02k_ql1gUCjh4quGqM9RM4F&export=download&confirm=t&uuid',
+    'B-12_Wi-512_res_64_cifar10_epochs_20':   
+        'https://drive.google.com/uc?id=1F1NvoOsYCgsn1GOZcwsoToOtsw-9Aw1v&export=download&confirm=t&uuid',
+    'B-12_Wi-512_res_64_cifar100_epochs_20':   
+        'https://drive.google.com/uc?id=1KIULehrqOyxIkZj0HiqowNmBy4Ye1EQ2&export=download&confirm=t&uuid',
+    'B-12_Wi-512_res_64_imagenet_epochs_20':   
+        'https://drive.google.com/uc?id=1f0ZYzB_XujX8hDcEn_J6iWvw1meJ4Cbg&export=download&confirm=t&uuid',
+    'B-6_Wi-1024_res_64_cifar10_epochs_20':   
+        'https://drive.google.com/uc?id=1Tyd5CkROPCMQybnrZ_o1wiAW7VoK6AfJ&export=download&confirm=t&uuid',
+    'B-6_Wi-1024_res_64_cifar100_epochs_20':   
+        'https://drive.google.com/uc?id=1FrRb78bjun6QGbbH-pCWDaaE_8LWW785&export=download&confirm=t&uuid',
+    'B-6_Wi-1024_res_64_imagenet_epochs_20':   
+        'https://drive.google.com/uc?id=115Lks211vx1at2dWn3JtQ57EZ7eNAVP4E&export=download&confirm=t&uuid',
+    'B-6_Wi-512_res_64_cifar10_epochs_20':
+        'https://drive.google.com/uc?id=1VjHgjheSm_w7xPtheEmY5kV_KE4-38zQ&export=download&confirm=t&uuid',
+    'B-6_Wi-512_res_64_cifar100_epochs_20':
+        'https://drive.google.com/uc?id=1iK3t20-GS_Vs-_Q3ZexSiCfjGJ3IaPC2&export=download&confirm=t&uuid',
+    'B-6_Wi-512_res_64_imagenet_epochs_20':
+        'https://drive.google.com/uc?id=1iK3t20-GS_Vs-_Q3ZexSiCfjGJ3IaPC2&export=download&confirm=t&uuid'
 }
 
 config_urls = {
@@ -44,7 +71,26 @@ config_urls = {
     'B-12_Wi-1024_res_64_cifar100_epochs_40':
         'https://drive.google.com/uc?id=1envpLKUa9LhUlp2dLIL8Jb8447wwpXF0&export=download&confirm=t&uuid',
     'B-12_Wi-1024_res_64_imagenet_epochs_50':
-        'https://drive.google.com/uc?id=1envpLKUa9LhUlp2dLIL8Jb8447wwpXF0&export=download&confirm=t&uuid'
+        'https://drive.google.com/uc?id=1envpLKUa9LhUlp2dLIL8Jb8447wwpXF0&export=download&confirm=t&uuid',
+    'B-6_Wi-1024_res_64_cifar10_epochs_20':
+        'https://drive.google.com/uc?id=11zFGFiKKxxrZOGk5oyk3AzBDnIY7KN3s&export=download&confirm=t&uuid',
+    'B-6_Wi-1024_res_64_cifar100_epochs_40':
+        'https://drive.google.com/uc?id=11zFGFiKKxxrZOGk5oyk3AzBDnIY7KN3s&export=download&confirm=t&uuid',
+    'B-6_Wi-1024_res_64_imagenet_epochs_50':
+        'https://drive.google.com/uc?id=11zFGFiKKxxrZOGk5oyk3AzBDnIY7KN3s&export=download&confirm=t&uuid',
+    'B-12_Wi-512_res_64_cifar10_epochs_20':
+        'https://drive.google.com/uc?id=14GKtQ1iYwOqYpy4RcrWz2Ue3AGG7eGLz&export=download&confirm=t&uuid',
+    'B-12_Wi-512_res_64_cifar100_epochs_40':
+        'https://drive.google.com/uc?id=14GKtQ1iYwOqYpy4RcrWz2Ue3AGG7eGLz&export=download&confirm=t&uuid',
+    'B-12_Wi-512_res_64_imagenet_epochs_50':
+        'https://drive.google.com/uc?id=14GKtQ1iYwOqYpy4RcrWz2Ue3AGG7eGLz&export=download&confirm=t&uuid',
+    'B-6_Wi-512_res_64_cifar10_epochs_20':
+        'https://drive.google.com/uc?id=1Fjf4RA_yUXHgHncb9GIlf9zBNAJ-8giv&export=download&confirm=t&uuid',
+    'B-6_Wi-512_res_64_cifar100_epochs_40':
+        'https://drive.google.com/uc?id=1Fjf4RA_yUXHgHncb9GIlf9zBNAJ-8giv&export=download&confirm=t&uuid',
+    'B-6_Wi-512_res_64_imagenet_epochs_50':
+        'https://drive.google.com/uc?id=1Fjf4RA_yUXHgHncb9GIlf9zBNAJ-8giv&export=download&confirm=t&uuid',
+
 }
 
 

@@ -8,8 +8,9 @@ from tqdm import tqdm
 from data_utils.data_stats import *
 from data_utils.dataloader import get_loader
 from models import get_architecture
+from models.networks import get_model
 from utils.parsers import get_finetune_parser
-from utils.config import config_to_name, model_from_config
+from utils.config import config_to_name, model_from_config, model_from_checkpoint
 from utils.metrics import topk_acc, real_acc
 from utils.optimizer import (
     OPTIMIZERS_DICT,
@@ -55,13 +56,10 @@ def finetune(args):
     torch.backends.cuda.matmul.allow_tf32 = True
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    # Get the resolution the model was trained with
-    model, architecture, crop_resolution, norm = model_from_config(args.checkpoint_path)
-    args.model = model
-    args.architecture = architecture
+    pretrained, crop_resolution, num_pretrain_classes = model_from_checkpoint(args.checkpoint) 
+    model = get_model(architecture=args.architecture, resolution=crop_resolution, num_classes=num_pretrain_classes, 
+                      checkpoint=pretrained)
     args.crop_resolution = crop_resolution
-    args.normalization = norm
-    model = get_architecture(**args.__dict__).cuda()
 
     # Get the dataloaders
     train_loader = get_loader(
@@ -104,25 +102,6 @@ def finetune(args):
 
     )
 
-    # Create unique identifier
-    name = config_to_name(args)
-    path = os.path.join(args.checkpoint_folder, name)
-
-    # Create folder to store the checkpoints
-    if not os.path.exists(path):
-        os.makedirs(path)
-        with open(path + '/config.txt', 'w') as f:
-            json.dump(args.__dict__, f, indent=2)
-
-    print('Loading checkpoint', args.checkpoint_path)
-    params = {
-        k: v
-        for k, v in torch.load(args.checkpoint_path).items()
-        if 'linear_out' not in k
-    }
-
-    print('Load_state output', model.load_state_dict(params, strict=False))
-
     model.linear_out = Linear(model.linear_out.in_features, args.num_classes)
     model.cuda()
 
@@ -147,6 +126,14 @@ def finetune(args):
         for name, param in model.named_parameters():
             if 'linear_out' not in name:
                 param.requires_grad = False
+
+    # Create folder to store the checkpoints
+    path = os.path.join(args.checkpoint_folder, args.checkpoint + '_' + args.dataset)
+    if not os.path.exists(path):
+        os.makedirs(path)
+        with open(path + '/config.txt', 'w') as f:
+            json.dump(args.__dict__, f, indent=2)
+    
 
     opt = get_optimizer(args.optimizer)(param_groups, lr=args.lr)
 
